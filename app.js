@@ -1,4 +1,7 @@
-let unit = 'metric'; // Default to Celsius
+let unit = 'metric';
+let isCelsius = true;
+let currentWeatherData = null;
+let forecastData = null;
 
 function getWeather() {
     const apiKey = "90cd931707b176ecf3ec1134e9481eff";
@@ -16,6 +19,7 @@ function getWeather() {
         .then(response => response.json())
         .then(data => {
             if (data.cod === 200) {
+                currentWeatherData = data;
                 displayWeather(data);
                 updateBackground(data.weather[0].main.toLowerCase());
             } else {
@@ -32,6 +36,7 @@ function getWeather() {
         .then(response => response.json())
         .then(data => {
             if (data.cod === "200") {
+                forecastData = data;
                 displayDailyForecast(data.list);
             } else {
                 console.error('Error fetching daily forecast data:', data.message);
@@ -58,7 +63,7 @@ function displayWeather(data) {
     const iconCode = data.weather[0].icon;
     const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@4x.png`;
 
-    const temperatureHTML = `<p>${temperature} °C</p>`;
+    const temperatureHTML = `<p>${formatTemperature(temperature)}</p>`;
     const weatherHTML = `
         <p>${cityName}</p>
         <p>${description}</p>`;
@@ -72,7 +77,7 @@ function displayWeather(data) {
 
 function displayDailyForecast(dailyData) {
     const dailyForecastDiv = document.getElementById('daily-forecast');
-    const dailyItems = dailyData.filter(item => item.dt_txt.includes("12:00:00")); // Filter for daily data
+    const dailyItems = dailyData.filter(item => item.dt_txt.includes("12:00:00")); 
 
     let dailyItemsHTML = '';
 
@@ -87,7 +92,7 @@ function displayDailyForecast(dailyData) {
             <div class="daily-item">
                 <span>${day}</span>
                 <img src="${iconUrl}" alt="Daily Weather Icon">
-                <span>${temperature} °C</span>
+                <span>${formatTemperature(temperature)}</span>
             </div>`;
     });
 
@@ -96,7 +101,7 @@ function displayDailyForecast(dailyData) {
 
 function updateBackground(description) {
     const body = document.body;
-    body.className = ''; // Clear any existing class
+    body.className = ''; 
 
     if (description.includes('clear')) {
         body.classList.add('weather-clear');
@@ -125,17 +130,40 @@ function updateBackground(description) {
     } else if (description.includes('overcast clouds')) {
         body.classList.add('weather-overcastclouds');
     } else {
-        body.classList.add('weather-default'); // Fallback class
+        body.classList.add('weather-default');
     }
 }
 
-// Initialize the app
+function toggleUnit() {
+    isCelsius = !isCelsius;
+    unit = isCelsius ? 'metric' : 'imperial';
+    updateToggleLabel();
+    if (currentWeatherData) {
+        getWeather(); // Fetch data again with the new unit
+    }
+}
+
+function updateToggleLabel() {
+    const toggleLabel = document.getElementById('toggle-label');
+    toggleLabel.textContent = isCelsius ? '°C' : '°F';
+}
+
+function formatTemperature(temp) {
+    if (isCelsius) {
+        return `${temp} °C`;
+    } else {
+        return `${temp} °F`;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('search-button').addEventListener('click', getWeather);
     document.getElementById('city').addEventListener('keypress', function(event) {
         if (event.key === 'Enter') {
-            event.preventDefault(); // Prevent default form submission if any
+            event.preventDefault(); 
             getWeather();
         }
     });
+    document.getElementById('unit-toggle').addEventListener('change', toggleUnit);
+    updateToggleLabel();
 });
